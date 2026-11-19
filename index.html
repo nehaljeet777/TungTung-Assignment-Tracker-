@@ -1,0 +1,624 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Module Assignment Tracker</title>
+<style>
+  :root{
+    --bg:#0c0a12;
+    --panel:#14111f;
+    --panel2:#1a1628;
+    --line:#2e2740;
+    --accent:#c77dff;
+    --accent2:#ff6ec7;
+    --warn:#ffb454;
+    --text:#e4def2;
+    --dim:#8a7fa0;
+    --mono:'Consolas','Cascadia Mono',monospace;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{
+    background:var(--bg);
+    color:var(--text);
+    font-family:var(--mono);
+    font-size:13px;
+    line-height:1.55;
+    min-height:100vh;
+  }
+  header{
+    border-bottom:1px solid var(--accent);
+    padding:14px 22px;
+    display:flex;align-items:baseline;gap:14px;flex-wrap:wrap;
+  }
+  header h1{font-size:16px;letter-spacing:2px;color:var(--accent)}
+  header span{color:var(--dim);font-size:11px;flex:1}
+  header button{
+    background:none;border:1px solid var(--line);color:var(--dim);
+    font-family:var(--mono);font-size:10px;padding:4px 10px;cursor:pointer;
+  }
+  header button:hover{border-color:var(--accent);color:var(--accent)}
+  main{padding:18px 22px;display:flex;flex-direction:column;gap:16px}
+  .section{border:1px solid var(--line);background:var(--panel)}
+  .section > h2{
+    font-size:11px;letter-spacing:2px;text-transform:uppercase;
+    color:var(--dim);padding:8px 14px;border-bottom:1px solid var(--line);
+    background:var(--panel2);
+  }
+  .section > h2 b{color:var(--accent)}
+
+  .btn{
+    background:none;border:1px dashed var(--accent);color:var(--accent);
+    font-family:var(--mono);font-size:11px;padding:8px 14px;cursor:pointer;
+    transition:all .15s;
+  }
+  .btn:hover{background:#1d1530}
+  .btn.small{padding:2px 8px;font-size:10px;border-color:var(--line);color:var(--dim)}
+  .btn.small:hover{border-color:var(--accent2);color:var(--accent2)}
+  .empty{padding:24px 14px;text-align:center;color:var(--dim);font-size:12px}
+
+  /* module list */
+  .modules{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:12px;padding:14px}
+  .module{
+    border:1px solid var(--line);background:var(--panel2);
+    padding:12px 14px;cursor:pointer;transition:all .15s;position:relative;
+  }
+  .module:hover{border-color:var(--accent2)}
+  .module.active{border-color:var(--accent);background:#1d1530;box-shadow:inset 0 0 0 1px var(--accent)}
+  .module .code{color:var(--accent);font-size:12px;letter-spacing:1px}
+  .module .name{font-size:13px;margin:4px 0 8px}
+  .module .meta{color:var(--dim);font-size:11px}
+  .module .meta b{color:var(--warn);font-weight:normal}
+  .module .tools{position:absolute;top:8px;right:8px;display:none;gap:4px}
+  .module:hover .tools{display:flex}
+  .add-module{
+    border:1px dashed var(--line);display:flex;align-items:center;justify-content:center;
+    color:var(--dim);cursor:pointer;min-height:86px;font-size:12px;
+  }
+  .add-module:hover{border-color:var(--accent);color:var(--accent)}
+
+  /* forms */
+  .form{padding:14px;border-top:1px dashed var(--line);display:none;flex-direction:column;gap:10px}
+  .form.open{display:flex}
+  .form label{font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--dim);display:block;margin-bottom:2px}
+  .form input[type=text],.form input[type=date],.form select,.form textarea{
+    width:100%;background:var(--panel2);border:1px solid var(--line);color:var(--text);
+    font-family:var(--mono);font-size:12px;padding:6px 8px;
+  }
+  .form input:focus,.form textarea:focus{outline:none;border-color:var(--accent)}
+  .form textarea{resize:vertical;min-height:50px}
+  .form .row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .form .actions{display:flex;gap:10px}
+  .form .save{border-style:solid}
+
+  /* assignment details */
+  .assignments{display:flex;flex-direction:column;gap:12px;padding:14px}
+  .assignment{
+    border:1px solid var(--line);background:var(--panel2);
+    padding:12px 14px;cursor:pointer;transition:border-color .15s;position:relative;
+  }
+  .assignment:hover{border-color:var(--accent2)}
+  .assignment.active{border-color:var(--accent)}
+  .assign-top{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:6px}
+  .assign-top .title{font-size:13px;color:var(--text)}
+  .tag{font-size:10px;padding:2px 8px;border:1px solid var(--line);color:var(--dim)}
+  .tag.due{color:var(--warn);border-color:var(--warn)}
+  .summary{display:none;margin-top:10px;border-top:1px dashed var(--line);padding-top:10px}
+  .assignment.active .summary{display:grid;grid-template-columns:1fr 1fr;gap:10px 16px}
+  .summary .full{grid-column:1/-1}
+  .field .k{font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--dim)}
+  .field .v{font-size:12px}
+  .field ul{padding-left:16px}
+  .marks{color:var(--accent)}
+  .hint{padding:0 14px 12px;color:var(--dim);font-size:11px}
+  .assignment .del{position:absolute;top:8px;right:8px;display:none}
+  .assignment:hover .del{display:inline-block}
+
+  /* pdf info */
+  .pdfinfo{font-size:11px;color:var(--dim);margin-top:4px}
+  .pdfinfo b{color:var(--accent);font-weight:normal}
+  .pdfdrop{
+    margin-top:6px;border:1px dashed var(--line);padding:8px 10px;
+    color:var(--dim);font-size:11px;text-align:center;transition:all .15s;
+  }
+  .pdfdrop.drag{border-color:var(--accent);color:var(--accent);background:#1d1530}
+  .pdfdrop.hasfile{border-style:solid;color:var(--text)}
+  .pdfdrop.hasfile b{color:var(--accent);font-weight:normal}
+
+  /* drop zone */
+  .dropzone{
+    margin-top:10px;border:1px dashed var(--line);padding:10px 12px;
+    color:var(--dim);font-size:11px;text-align:center;transition:all .15s;
+  }
+  .dropzone.drag{border-color:var(--accent);color:var(--accent);background:#1d1530}
+  .dropped{margin-top:8px;text-align:left}
+  .dropped .file{display:flex;justify-content:space-between;gap:10px;padding:3px 0;border-bottom:1px dotted var(--line);font-size:11px}
+  .dropped .file span:last-child{color:var(--dim)}
+  .dropped .file .ok{color:var(--accent)}
+  .dropped .file .bad{color:var(--accent2)}
+  .checks{margin-top:8px;font-size:11px}
+  .checks div{padding:2px 0}
+  .checks .pass{color:var(--accent)}
+  .checks .fail{color:var(--accent2)}
+  .dropzone input{display:none}
+
+  /* quick notes */
+  .notes{display:flex;flex-wrap:wrap;gap:12px;padding:14px}
+  .note{
+    border:1px solid var(--line);border-left:3px solid var(--accent2);
+    background:var(--panel2);padding:10px 14px;min-width:230px;flex:1;
+    cursor:pointer;transition:all .15s;
+  }
+  .note .k{font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--dim)}
+  .note .v{font-size:12px;margin-top:2px}
+  .note.flash{border-left-color:var(--accent);background:#1d1530;box-shadow:0 0 0 1px var(--accent)}
+  footer{padding:8px 22px 20px;color:var(--dim);font-size:10px}
+</style>
+</head>
+<body>
+<header>
+  <h1>MODULE ASSIGNMENT TRACKER</h1>
+  <span>// stored locally in your browser · nothing leaves your laptop</span>
+  <button id="loadSample">load sample data</button>
+  <button id="wipe">reset all</button>
+</header>
+
+<main>
+  <!-- 1. Module list -->
+  <section class="section" id="module-section">
+    <h2><b>01</b> · Modules — click to focus · hover to edit</h2>
+    <div class="modules" id="moduleList"></div>
+    <div class="form" id="moduleForm">
+      <div class="row">
+        <div><label>Module code</label><input type="text" id="mCode" placeholder="e.g. TMA2113"></div>
+        <div><label>Module name</label><input type="text" id="mName" placeholder="e.g. Data Structures & Algorithms"></div>
+      </div>
+      <div class="actions">
+        <button class="btn save" id="mSave">save module</button>
+        <button class="btn small" id="mCancel">cancel</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- 2. Assignment details -->
+  <section class="section" id="detail-section">
+    <h2><b>02</b> · Assignments — <span id="detailModule" style="color:var(--accent)"></span></h2>
+    <div class="assignments" id="assignmentList"></div>
+    <div style="padding:0 14px 14px"><button class="btn" id="aAdd">+ add assignment</button></div>
+    <div class="form" id="assignForm">
+      <div class="row">
+        <div><label>Title</label><input type="text" id="aTitle" placeholder="e.g. Assignment 1 — Report"></div>
+        <div><label>Due date</label><input type="date" id="aDue"></div>
+      </div>
+      <div class="row">
+        <div><label>Group / Individual</label>
+          <select id="aMode"><option>Individual</option><option>Group</option></select>
+        </div>
+        <div><label>Marks contribution</label><input type="text" id="aMarks" placeholder="e.g. 20% of final grade"></div>
+      </div>
+      <div><label>Requirements (one per line)</label><textarea id="aReqs" placeholder="Report 8–10 pages, PDF only…"></textarea></div>
+      <div><label>How to conduct it (one per line)</label><textarea id="aHow" placeholder="Interview two users, then convert notes…"></textarea></div>
+      <div><label>Assignment PDF (info is stored; the file stays on your laptop)</label><input type="file" id="aPdf" accept=".pdf"></div>
+      <div class="actions">
+        <button class="btn save" id="aSave">save assignment</button>
+        <button class="btn small" id="aCancel">cancel</button>
+      </div>
+    </div>
+    <div class="hint">Click an assignment to expand its full summary card and drop zone.</div>
+  </section>
+
+  <!-- 3. Quick notes -->
+  <section class="section" id="note-section">
+    <h2><b>03</b> · Quick notes — click to highlight</h2>
+    <div class="notes" id="noteList"></div>
+  </section>
+</main>
+
+<footer>All data is fictional unless you add your own · stored in this browser only</footer>
+
+<script>
+// ---------- persistence (IndexedDB, local only) ----------
+const DB_NAME = "tracker-db", STORE = "state";
+function dbOpen(){
+  return new Promise((res,rej)=>{
+    const r = indexedDB.open(DB_NAME, 1);
+    r.onupgradeneeded = ()=>r.result.createObjectStore(STORE);
+    r.onsuccess = ()=>res(r.result);
+    r.onerror = ()=>rej(r.error);
+  });
+}
+async function dbSave(key, val){
+  const db = await dbOpen();
+  return new Promise((res,rej)=>{
+    const tx = db.transaction(STORE,"readwrite");
+    tx.objectStore(STORE).put(val, key);
+    tx.oncomplete = ()=>res();
+    tx.onerror = ()=>rej(tx.error);
+  });
+}
+async function dbLoad(key){
+  const db = await dbOpen();
+  return new Promise((res,rej)=>{
+    const tx = db.transaction(STORE,"readonly");
+    const rq = tx.objectStore(STORE).get(key);
+    rq.onsuccess = ()=>res(rq.result);
+    rq.onerror = ()=>rej(rq.error);
+  });
+}
+async function dbClearAll(){
+  const db = await dbOpen();
+  return new Promise((res,rej)=>{
+    const tx = db.transaction(STORE,"readwrite");
+    tx.objectStore(STORE).clear();
+    tx.oncomplete = ()=>res();
+    tx.onerror = ()=>rej(tx.error);
+  });
+}
+
+// ---------- state ----------
+let modules = [];            // [{code,name}]
+let assignments = {};        // { code: [ {id,title,due,mode,marks,reqs[],how[],pdf:{name,size}|null} ] }
+let droppedFiles = {};       // { assignmentId: [{name,size}] }
+let focusModule = null;
+let openAssignmentId = null;
+let editingModule = null;    // code being edited, or null for new
+
+const SAMPLE_NOTES = [
+  { k:"Deadline", v:"Check all due dates against the local (MYT) time shown — no late submissions accepted after midnight." },
+  { k:"File format", v:"Reports: PDF only. Code: zip with matric number in filename. No .rar, no Google Drive links." },
+  { k:"Submission check", v:"Before submitting: cover page, plagiarism declaration, and Turnitin similarity below 20%." },
+];
+const SAMPLE = {
+  modules: [
+    { code:"TMA2113", name:"Data Structures & Algorithms" },
+    { code:"KOM3112", name:"Software Engineering Practice" },
+    { code:"STM2205", name:"Statistics for Computing" },
+  ],
+  assignments: {
+    "TMA2113": [
+      { id:"s1", title:"Assignment 1 — Binary Search Tree Report", due:"2026-11-27", mode:"Individual", marks:"20% of final grade", pdf:null,
+        reqs:["Implement BST with insert, delete, and in-order traversal in C++.","Report of 8–10 pages with complexity analysis table.","Submit source code zipped with your matric number as filename."],
+        how:["Build and test each operation separately with unit test cases first.","Profile runtime on sorted vs random input order (at least 1,000 nodes).","Write analysis comparing O(h) behaviour against AVL from the Week 6 lecture."] },
+      { id:"s2", title:"Group Project — Pathfinding Visualiser", due:"2026-12-11", mode:"Group", marks:"30% of final grade", pdf:null,
+        reqs:["Implement A* and Dijkstra on a grid, with step-by-step visual output.","Demo video of 3–5 minutes plus GitHub repo history.","Written reflection (2 pages) on each member's contribution."],
+        how:["Divide work: one member per algorithm, one on the visualiser, one on testing.","Validate paths against the sample maps on the course page.","Rehearse the demo before recording; show both algorithms on the same map."] },
+    ],
+    "KOM3112": [
+      { id:"s3", title:"Assignment 1 — Requirements Specification (SRS)", due:"2026-11-24", mode:"Individual", marks:"15% of final grade", pdf:null,
+        reqs:["IEEE-style SRS for a campus food-ordering app, max 12 pages.","At least 10 functional and 5 non-functional requirements, each numbered.","Include one use-case diagram."],
+        how:["Interview two target users (e.g. café vendors at the student hub) and log the sessions.","Convert interview notes into numbered requirements; group them by module.","Check each requirement against the verifiability checklist from Tutorial 3."] },
+    ],
+    "STM2205": [
+      { id:"s4", title:"Assignment 1 — Hypothesis Testing Problem Set", due:"2026-11-21", mode:"Individual", marks:"10% of final grade", pdf:null,
+        reqs:["Solve 8 problems on t-tests and chi-square; show full working.","State assumptions and significance level for every test.","Handwritten or typed PDF; single file, max 10 MB."],
+        how:["Attempt each problem manually first, then verify in R or Python.","Compare against the worked examples from Lab 4 before finalising.","Check p-value interpretation wording against Lecture 5 notes."] },
+    ],
+  },
+};
+
+// ---------- helpers ----------
+function fmtSize(b){
+  return b > 1048576 ? (b/1048576).toFixed(1)+" MB" : Math.max(1,Math.round(b/1024))+" KB";
+}
+function esc(s){
+  return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+}
+function countFor(code){ return (assignments[code]||[]).length; }
+function nextDue(code){
+  const list = (assignments[code]||[]).map(a=>a.due).filter(Boolean).sort();
+  return list[0] || "—";
+}
+function runChecks(a, files){
+  const names = files.map(f=>f.name.toLowerCase());
+  const hasPdf = names.some(n=>n.endsWith(".pdf"));
+  const hasZip = names.some(n=>n.endsWith(".zip"));
+  const zipNamed = names.some(n=>n.endsWith(".zip") && /\d{6,}/.test(n));
+  const hasRar = names.some(n=>n.endsWith(".rar"));
+  let html = `<div class="${hasPdf?"pass":"fail"}">${hasPdf?"✓":"✗"} PDF report ${hasPdf?"found":"missing"}</div>`;
+  if (a.mode === "Group")
+    html += `<div class="${hasZip?"pass":"fail"}">${hasZip?"✓":"✗"} Code zip ${hasZip?"found":"missing"}</div>
+             <div class="${zipNamed?"pass":"fail"}">${zipNamed?"✓":"✗"} Zip filename contains matric number${zipNamed?"":" (e.g. 201945.zip)"}</div>`;
+  html += `<div class="${hasRar?"fail":"pass"}">${hasRar?"✗":"✓"} No .rar archives${hasRar?" (rename to .zip)":""}</div>`;
+  return html;
+}
+function showDropped(a, container, files){
+  container.innerHTML =
+    files.map(f=>`<div class="file"><span>${esc(f.name)}</span><span class="${/\.(pdf|zip|cpp|docx|ipynb|r)$/i.test(f.name)?"ok":"bad"}">${fmtSize(f.size)}</span></div>`).join("") +
+    `<div class="checks">${runChecks(a, files)}</div>`;
+}
+function wireDropzone(zone, a){
+  const input = zone.querySelector("input");
+  const droppedBox = document.getElementById("dropped-"+a.id);
+  const handle = fileList=>{
+    const files = Array.from(fileList).map(f=>({name:f.name, size:f.size}));
+    if (!files.length) return;
+    droppedFiles[a.id] = files;
+    dbSave("dropped", droppedFiles);
+    showDropped(a, droppedBox, files);
+  };
+  input.addEventListener("change", ()=>handle(input.files));
+  zone.addEventListener("click", ()=>input.click());
+  zone.addEventListener("dragover", e=>{ e.preventDefault(); zone.classList.add("drag"); });
+  zone.addEventListener("dragleave", ()=>zone.classList.remove("drag"));
+  zone.addEventListener("drop", e=>{
+    e.preventDefault();
+    zone.classList.remove("drag");
+    handle(e.dataTransfer.files);
+  });
+  if (droppedFiles[a.id] && droppedFiles[a.id].length)
+    showDropped(a, droppedBox, droppedFiles[a.id]);
+}
+
+// ---------- render ----------
+const moduleList = document.getElementById("moduleList");
+const assignmentList = document.getElementById("assignmentList");
+const noteList = document.getElementById("noteList");
+const detailModule = document.getElementById("detailModule");
+
+function renderModules(){
+  moduleList.innerHTML = "";
+  if (!modules.length){
+    moduleList.innerHTML = `<div class="empty" style="grid-column:1/-1">No modules yet. Use “+ add module” below to create your first one.</div>`;
+  }
+  modules.forEach(m=>{
+    const d = document.createElement("div");
+    d.className = "module" + (m.code===focusModule ? " active":"");
+    d.innerHTML = `<div class="tools">
+        <button class="btn small" data-edit="${esc(m.code)}">rename</button>
+        <button class="btn small" data-del="${esc(m.code)}">delete</button>
+      </div>
+      <div class="code">${esc(m.code)}</div>
+      <div class="name">${esc(m.name)}</div>
+      <div class="meta">${countFor(m.code)} assignment(s) · next due: <b>${nextDue(m.code)}</b></div>`;
+    d.addEventListener("click", e=>{
+      if (e.target.closest("button")) return;
+      focusModule = m.code;
+      openAssignmentId = null;
+      dbSave("focusModule", focusModule);
+      dbSave("openAssignmentId", null);
+      renderModules(); renderAssignments(); renderAssignForm();
+    });
+    d.querySelector("[data-edit]").addEventListener("click", ()=>{
+      editingModule = m.code;
+      document.getElementById("mCode").value = m.code;
+      document.getElementById("mName").value = m.name;
+      document.getElementById("moduleForm").classList.add("open");
+    });
+    d.querySelector("[data-del]").addEventListener("click", ()=>{
+      modules = modules.filter(x=>x.code!==m.code);
+      delete assignments[m.code];
+      if (focusModule===m.code){ focusModule = modules[0] ? modules[0].code : null; openAssignmentId = null; }
+      dbSave("modules", modules); dbSave("assignments", assignments);
+      dbSave("focusModule", focusModule); dbSave("openAssignmentId", null);
+      renderModules(); renderAssignments(); renderAssignForm();
+    });
+    moduleList.appendChild(d);
+  });
+  const add = document.createElement("div");
+  add.className = "add-module";
+  add.textContent = "+ add module";
+  add.addEventListener("click", ()=>{
+    editingModule = null;
+    document.getElementById("mCode").value = "";
+    document.getElementById("mName").value = "";
+    document.getElementById("moduleForm").classList.add("open");
+    document.getElementById("mCode").focus();
+  });
+  moduleList.appendChild(add);
+}
+
+function renderAssignments(){
+  if (!focusModule){
+    detailModule.textContent = "no module selected";
+    assignmentList.innerHTML = "";
+    return;
+  }
+  const m = modules.find(x=>x.code===focusModule);
+  detailModule.textContent = focusModule + (m ? " — " + m.name : "");
+  const list = assignments[focusModule] || [];
+  assignmentList.innerHTML = "";
+  if (!list.length){
+    assignmentList.innerHTML = `<div class="empty">No assignments for this module yet. Use “+ add assignment” below.</div>`;
+  }
+  list.forEach(a=>{
+    const d = document.createElement("div");
+    d.className = "assignment" + (a.id===openAssignmentId ? " active":"");
+    d.innerHTML = `
+      <button class="btn small del" data-del>delete</button>
+      <div class="assign-top">
+        <div class="title">${esc(a.title)}</div>
+        <div><span class="tag due">Due ${esc(a.due || "—")}</span> <span class="tag">${esc(a.mode)}</span> <span class="tag">${esc(a.marks)}</span></div>
+      </div>
+      <div class="summary">
+        <div class="field"><div class="k">Due date</div><div class="v">${esc(a.due || "—")}</div></div>
+        <div class="field"><div class="k">Group / Individual</div><div class="v">${esc(a.mode)}</div></div>
+        <div class="field full"><div class="k">Requirements</div><div class="v"><ul>${(a.reqs||[]).map(r=>`<li>${esc(r)}</li>`).join("")}</ul></div></div>
+        <div class="field full"><div class="k">How to conduct it</div><div class="v"><ul>${(a.how||[]).map(r=>`<li>${esc(r)}</li>`).join("")}</ul></div></div>
+        <div class="field"><div class="k">Marks contribution</div><div class="v marks">${esc(a.marks)}</div></div>
+        <div class="field full"><div class="k">Assignment PDF</div>
+          <div class="v pdfinfo" id="pdfinfo-${a.id}">${a.pdf ? `attached: <b>${esc(a.pdf.name)}</b> · ${fmtSize(a.pdf.size)}` : ""}</div>
+          <div class="pdfdrop ${a.pdf ? "hasfile" : ""}" id="pdfdrop-${a.id}">${a.pdf ? `attached: <b>${esc(a.pdf.name)}</b> · ${fmtSize(a.pdf.size)} — drop another PDF to replace` : "Drop the assignment brief PDF here"}
+            <input type="file" accept=".pdf" style="display:none">
+          </div>
+        </div>
+        <div class="dropzone full" data-dz>Drop your submission folder or files here — or click to browse
+          <input type="file" multiple webkitdirectory>
+        </div>
+        <div class="dropped full" id="dropped-${a.id}"></div>
+      </div>`;
+    d.addEventListener("click", e=>{
+      if (e.target.closest("button")) return;
+      openAssignmentId = (openAssignmentId===a.id) ? null : a.id;
+      dbSave("openAssignmentId", openAssignmentId);
+      renderAssignments();
+    });
+    d.querySelector("[data-del]").addEventListener("click", ()=>{
+      assignments[focusModule] = (assignments[focusModule]||[]).filter(x=>x.id!==a.id);
+      delete droppedFiles[a.id];
+      if (openAssignmentId===a.id) openAssignmentId = null;
+      dbSave("assignments", assignments); dbSave("dropped", droppedFiles);
+      dbSave("openAssignmentId", null);
+      renderAssignments();
+    });
+    assignmentList.appendChild(d);
+    if (a.id===openAssignmentId){ wireDropzone(d.querySelector("[data-dz]"), a); wirePdfDrop(d, a); }
+  });
+}
+
+function wirePdfDrop(card, a){
+  const zone = card.querySelector(".pdfdrop");
+  if (!zone) return;
+  const input = zone.querySelector("input");
+  const setPdf = f => {
+    if (!f || !f.name.toLowerCase().endsWith(".pdf")){
+      zone.style.color = "var(--accent2)";
+      setTimeout(()=>zone.style.color = "", 900);
+      return;
+    }
+    a.pdf = { name:f.name, size:f.size };
+    const list = assignments[focusModule] || [];
+    dbSave("assignments", assignments);
+    zone.classList.add("hasfile");
+    zone.innerHTML = `attached: <b>${esc(f.name)}</b> · ${fmtSize(f.size)} — drop another PDF to replace<input type="file" accept=".pdf" style="display:none">`;
+    wirePdfDrop(card, a);
+  };
+  input.addEventListener("change", ()=>setPdf(input.files[0]));
+  zone.addEventListener("click", ()=>input.click());
+  zone.addEventListener("dragover", e=>{ e.preventDefault(); zone.classList.add("drag"); });
+  zone.addEventListener("dragleave", ()=>zone.classList.remove("drag"));
+  zone.addEventListener("drop", e=>{
+    e.preventDefault();
+    zone.classList.remove("drag");
+    setPdf(e.dataTransfer.files[0]);
+  });
+}
+
+function renderAssignForm(){
+  const form = document.getElementById("assignForm");
+  const btn = document.getElementById("aAdd");
+  if (focusModule){
+    btn.style.display = "";
+    btn.textContent = "+ add assignment";
+  } else {
+    btn.style.display = "none";
+    form.classList.remove("open");
+  }
+}
+
+function renderNotes(){
+  noteList.innerHTML = "";
+  SAMPLE_NOTES.forEach(n=>{
+    const d = document.createElement("div");
+    d.className = "note";
+    d.innerHTML = `<div class="k">${esc(n.k)}</div><div class="v">${esc(n.v)}</div>`;
+    d.addEventListener("click", ()=>{
+      d.classList.add("flash");
+      setTimeout(()=>d.classList.remove("flash"), 1200);
+    });
+    noteList.appendChild(d);
+  });
+}
+
+// ---------- forms ----------
+document.getElementById("mCancel").addEventListener("click", ()=>{
+  document.getElementById("moduleForm").classList.remove("open");
+});
+document.getElementById("mSave").addEventListener("click", ()=>{
+  const code = document.getElementById("mCode").value.trim();
+  const name = document.getElementById("mName").value.trim();
+  if (!code || !name) return;
+  if (editingModule){
+    const m = modules.find(x=>x.code===editingModule);
+    if (m && code!==editingModule){
+      assignments[code] = assignments[editingModule] || [];
+      delete assignments[editingModule];
+      if (focusModule===editingModule) focusModule = code;
+    }
+    if (m){ m.code = code; m.name = name; }
+    editingModule = null;
+  } else {
+    if (!modules.some(x=>x.code===code)){
+      modules.push({code, name});
+      assignments[code] = assignments[code] || [];
+      if (!focusModule) focusModule = code;
+    }
+  }
+  dbSave("modules", modules); dbSave("assignments", assignments); dbSave("focusModule", focusModule);
+  document.getElementById("moduleForm").classList.remove("open");
+  renderModules(); renderAssignments(); renderAssignForm();
+});
+
+document.getElementById("aAdd").addEventListener("click", ()=>{
+  document.getElementById("assignForm").classList.toggle("open");
+});
+document.getElementById("aCancel").addEventListener("click", ()=>{
+  document.getElementById("assignForm").classList.remove("open");
+});
+document.getElementById("aSave").addEventListener("click", ()=>{
+  const title = document.getElementById("aTitle").value.trim();
+  if (!focusModule || !title) return;
+  const lines = s => s.value.split("\n").map(x=>x.trim()).filter(Boolean);
+  const pdfInput = document.getElementById("aPdf");
+  const pdf = pdfInput.files[0] ? {name:pdfInput.files[0].name, size:pdfInput.files[0].size} : null;
+  const a = {
+    id: "a"+Date.now(),
+    title,
+    due: document.getElementById("aDue").value || "",
+    mode: document.getElementById("aMode").value,
+    marks: document.getElementById("aMarks").value.trim() || "—",
+    reqs: lines(document.getElementById("aReqs")),
+    how: lines(document.getElementById("aHow")),
+    pdf,
+  };
+  assignments[focusModule] = assignments[focusModule] || [];
+  assignments[focusModule].push(a);
+  if (pdf) { droppedFiles[a.id] = [{name:pdf.name, size:pdf.size}]; dbSave("dropped", droppedFiles); }
+  dbSave("assignments", assignments);
+  document.getElementById("assignForm").classList.remove("open");
+  ["aTitle","aMarks","aReqs","aHow"].forEach(id=>document.getElementById(id).value="");
+  document.getElementById("aPdf").value = "";
+  openAssignmentId = a.id;
+  dbSave("openAssignmentId", a.id);
+  renderAssignments();
+});
+
+// ---------- header actions ----------
+document.getElementById("loadSample").addEventListener("click", ()=>{
+  modules = SAMPLE.modules.map(m=>({...m}));
+  assignments = JSON.parse(JSON.stringify(SAMPLE.assignments));
+  focusModule = modules[0].code;
+  openAssignmentId = null;
+  dbSave("modules", modules); dbSave("assignments", assignments);
+  dbSave("focusModule", focusModule); dbSave("openAssignmentId", null);
+  renderModules(); renderAssignments(); renderAssignForm();
+});
+document.getElementById("wipe").addEventListener("click", async ()=>{
+  await dbClearAll();
+  modules = []; assignments = {}; droppedFiles = {};
+  focusModule = null; openAssignmentId = null;
+  renderModules(); renderAssignments(); renderAssignForm();
+});
+
+// ---------- boot ----------
+(async ()=>{
+  try{
+    const m = await dbLoad("modules");
+    if (m) modules = m;
+    const a = await dbLoad("assignments");
+    if (a) assignments = a;
+    const fm = await dbLoad("focusModule");
+    if (fm && modules.some(x=>x.code===fm)) focusModule = fm;
+    if (!focusModule && modules.length) focusModule = modules[0].code;
+    const oa = await dbLoad("openAssignmentId");
+    if (oa && focusModule && (assignments[focusModule]||[]).some(x=>x.id===oa)) openAssignmentId = oa;
+    const df = await dbLoad("dropped");
+    if (df) droppedFiles = df;
+  }catch(e){ /* blocked storage: start fresh */ }
+  renderModules();
+  renderAssignments();
+  renderAssignForm();
+  renderNotes();
+})();
+</script>
+</body>
+</html>
